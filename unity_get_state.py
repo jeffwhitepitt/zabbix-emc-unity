@@ -1,6 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+"""
+EMC Unity Storage monitoring script for Zabbix.
+Collects health status and other metrics from EMC Unity storage systems via REST API
+and sends them to Zabbix server.
+"""
+
 import os
 import time
 import argparse
@@ -18,7 +24,22 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-def api_connect(api_user, api_password, api_ip, api_port):
+def api_connect(api_user: str, api_password: str, api_ip: str, api_port: str) -> requests.Session:
+  """
+  Connect to Unity REST API and authenticate.
+  
+  Args:
+    api_user: Username for Unity REST API
+    api_password: Password for Unity REST API
+    api_ip: IP address of Unity storage system
+    api_port: Port number for Unity REST API
+    
+  Returns:
+    authenticated requests Session object
+    
+  Raises:
+    SystemExit: If connection or authentication fails
+  """
   api_login_url = "https://{0}:{1}/api/types/loginSessionInfo".format(api_ip, api_port)
   session_unity = requests.Session()
   session_unity.auth = (api_user, api_password)
@@ -42,7 +63,17 @@ def api_connect(api_user, api_password, api_ip, api_port):
 
 
 
-def api_logout(api_ip, session_unity):
+def api_logout(api_ip: str, session_unity: requests.Session) -> None:
+  """
+  Logout from Unity REST API session.
+  
+  Args:
+    api_ip: IP address of Unity storage system
+    session_unity: Authenticated session object
+    
+  Raises:
+    SystemExit: If logout fails
+  """
   api_logout_url = "https://{0}/api/types/loginSessionInfo/action/logout".format(api_ip)
   session_unity.headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
 
@@ -62,13 +93,32 @@ def api_logout(api_ip, session_unity):
     sys.exit("170")
 
 
-def convert_to_zabbix_json(data):
+def convert_to_zabbix_json(data: list) -> str:
+  """
+  Convert data to Zabbix JSON format.
+  
+  Args:
+    data: List of items to convert to Zabbix JSON format
+    
+  Returns:
+    JSON string in Zabbix format
+  """
   output = json.dumps({"data": data}, indent = None, separators = (',',': '))
   return output
 
 
 
-def send_data_to_zabbix(zabbix_data, storage_name):
+def send_data_to_zabbix(zabbix_data: list, storage_name: str) -> int:
+  """
+  Send collected data to Zabbix server.
+  
+  Args:
+    zabbix_data: List of formatted data items to send
+    storage_name: Name of the storage system
+    
+  Returns:
+    Return code from zabbix_sender
+  """
   sender_command = "/usr/bin/zabbix_sender"
   config_path = "/etc/zabbix/zabbix_agentd.conf"
   time_of_create_file = int(time.time())
@@ -84,7 +134,24 @@ def send_data_to_zabbix(zabbix_data, storage_name):
 
 
 
-def discovering_resources(api_user, api_password, api_ip, api_port, storage_name, list_resources):
+def discovering_resources(api_user: str, api_password: str, api_ip: str, api_port: str, storage_name: str, list_resources: list) -> int:
+  """
+  Discover resources from Unity storage system.
+  
+  Args:
+    api_user: Username for Unity REST API
+    api_password: Password for Unity REST API
+    api_ip: IP address of Unity storage system
+    api_port: Port number for Unity REST API
+    storage_name: Name of the storage system
+    list_resources: List of resource types to discover
+    
+  Returns:
+    Return code from sending data to Zabbix
+    
+  Raises:
+    SystemExit: If resource discovery fails
+  """
   api_session = api_connect(api_user, api_password, api_ip, api_port)
 
   xer = []
@@ -117,7 +184,24 @@ def discovering_resources(api_user, api_password, api_ip, api_port, storage_name
 
 
 
-def get_status_resources(api_user, api_password, api_ip, api_port, storage_name, list_resources):
+def get_status_resources(api_user: str, api_password: str, api_ip: str, api_port: str, storage_name: str, list_resources: list) -> int:
+  """
+  Get status of resources from Unity storage system.
+  
+  Args:
+    api_user: Username for Unity REST API
+    api_password: Password for Unity REST API
+    api_ip: IP address of Unity storage system
+    api_port: Port number for Unity REST API
+    storage_name: Name of the storage system
+    list_resources: List of resource types to check
+    
+  Returns:
+    Return code from sending data to Zabbix
+    
+  Raises:
+    SystemExit: If resource status collection fails
+  """
   api_session = api_connect(api_user, api_password, api_ip, api_port)
 
   state_resources = [] # This list will persist state of resources (pool, lun, fcPort, battery, diks, ...) on zabbix format
@@ -195,7 +279,10 @@ def get_status_resources(api_user, api_password, api_ip, api_port, storage_name,
 
 
 
-def main():
+def main() -> None:
+  """
+  Main function that initializes logging, parses arguments, and executes resource discovery or status retrieval.
+  """
   # Create log-object
   global unity_logger, unity_handler
   LOG_FILENAME = "/tmp/unity_state.log"
@@ -213,7 +300,7 @@ def main():
   unity_logger.addHandler(unity_handler)
   
   # Parsing arguments
-  unity_parser = argparse.ArgumentParser()
+  unity_parser = argparse.ArgumentParser(description=__doc__)
   unity_parser.add_argument('--api_ip', action="store", help="Where to connect", required=True)
   unity_parser.add_argument('--api_port', action="store", required=True)
   unity_parser.add_argument('--api_user', action="store", required=True)
