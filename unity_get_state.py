@@ -18,22 +18,6 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-# Create log-object
-LOG_FILENAME = "/tmp/unity_state.log"
-unity_logger = logging.getLogger("unity_logger")
-unity_logger.setLevel(logging.INFO)
-
-# Set handler
-unity_handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=1024*1024, backupCount=5)
-unity_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# Set formatter for handler
-unity_handler.setFormatter(unity_formatter)
-
-# Add handler to log-object
-unity_logger.addHandler(unity_handler)
-
-
 def api_connect(api_user, api_password, api_ip, api_port):
   api_login_url = "https://{0}:{1}/api/types/loginSessionInfo".format(api_ip, api_port)
   session_unity = requests.Session()
@@ -212,6 +196,22 @@ def get_status_resources(api_user, api_password, api_ip, api_port, storage_name,
 
 
 def main():
+  # Create log-object
+  global unity_logger, unity_handler
+  LOG_FILENAME = "/tmp/unity_state.log"
+  unity_logger = logging.getLogger("unity_logger")
+  unity_logger.setLevel(logging.INFO)
+
+  # Set handler
+  unity_handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=1024*1024, backupCount=5)
+  unity_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+  # Set formatter for handler
+  unity_handler.setFormatter(unity_formatter)
+
+  # Add handler to log-object
+  unity_logger.addHandler(unity_handler)
+  
   # Parsing arguments
   unity_parser = argparse.ArgumentParser()
   unity_parser.add_argument('--api_ip', action="store", help="Where to connect", required=True)
