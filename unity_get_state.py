@@ -283,22 +283,13 @@ def main() -> None:
   """
   Main function that initializes logging, parses arguments, and executes resource discovery or status retrieval.
   """
-  # Create log-object
-  global unity_logger, unity_handler
-  LOG_FILENAME = "/tmp/unity_state.log"
+  # Setup logging
+  global unity_logger
+  log_level = logging.DEBUG
+  log_format = "%(asctime)s - %(levelname)s - %(message)s"
+  logging.basicConfig(stream=sys.stdout, format=log_format, level=log_level)
   unity_logger = logging.getLogger("unity_logger")
-  unity_logger.setLevel(logging.INFO)
 
-  # Set handler
-  unity_handler = logging.handlers.RotatingFileHandler(LOG_FILENAME, maxBytes=1024*1024, backupCount=5)
-  unity_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-  # Set formatter for handler
-  unity_handler.setFormatter(unity_formatter)
-
-  # Add handler to log-object
-  unity_logger.addHandler(unity_handler)
-  
   # Parsing arguments
   unity_parser = argparse.ArgumentParser(description=__doc__)
   unity_parser.add_argument('--api_ip', action="store", help="Where to connect", required=True)
