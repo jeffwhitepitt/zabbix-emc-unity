@@ -40,7 +40,7 @@ def api_connect(api_user: str, api_password: str, api_ip: str, api_port: str) ->
   Raises:
     SystemExit: If connection or authentication fails
   """
-  api_login_url = "https://{0}:{1}/api/types/loginSessionInfo".format(api_ip, api_port)
+  api_login_url = f"https://{api_ip}:{api_port}/api/types/loginSessionInfo"
   session_unity = requests.Session()
   session_unity.auth = (api_user, api_password)
   session_unity.headers = {'X-EMC-REST-CLIENT': 'true', 'Content-type': 'application/json', 'Accept': 'application/json'}
@@ -48,11 +48,11 @@ def api_connect(api_user: str, api_password: str, api_ip: str, api_port: str) ->
   try:
     login = session_unity.get(api_login_url, verify=False)
   except Exception as oops:
-    unity_logger.error("Connection Error Occurs: {0}".format(oops))
+    unity_logger.error(f"Connection Error Occurs: {oops}")
     sys.exit("50")
 
   if login.status_code != 200:
-    unity_logger.error("Connection Return Code = {0}".format(login.status_code))
+    unity_logger.error(f"Connection Return Code = {login.status_code}")
     sys.exit("60")
   elif login.text.find("isPasswordChangeRequired") >= 0: # If i can find string "isPasswordChangeRequired" therefore login is successful
     unity_logger.info("Connection established")
@@ -74,17 +74,17 @@ def api_logout(api_ip: str, session_unity: requests.Session) -> None:
   Raises:
     SystemExit: If logout fails
   """
-  api_logout_url = "https://{0}/api/types/loginSessionInfo/action/logout".format(api_ip)
+  api_logout_url = f"https://{api_ip}/api/types/loginSessionInfo/action/logout"
   session_unity.headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
 
   try:
     logout = session_unity.post(api_logout_url, verify=False)
   except Exception as oops:
-    unity_logger.error("Logout Error Occurs: {0}".format(oops))
+    unity_logger.error(f"Logout Error Occurs: {oops}")
     sys.exit("150")
 
   if logout.status_code != 200:
-    unity_logger.error("Logout status = {0}".format(logout.status_code))
+    unity_logger.error(f"Logout status = {logout.status_code}")
     sys.exit("160")
   elif logout.text.find("Logout successful") >= 0:
     unity_logger.info("Logout successful")
@@ -122,7 +122,7 @@ def send_data_to_zabbix(zabbix_data: list, storage_name: str) -> int:
   sender_command = "/usr/bin/zabbix_sender"
   config_path = "/etc/zabbix/zabbix_agentd.conf"
   time_of_create_file = int(time.time())
-  temp_file = "/tmp/{0}_{1}.tmp".format(storage_name, time_of_create_file)
+  temp_file = f"/tmp/{storage_name}_{time_of_create_file}.tmp"
 
   with open(temp_file, "w") as f:
     f.write("")
@@ -157,7 +157,7 @@ def discovering_resources(api_user: str, api_password: str, api_ip: str, api_por
   xer = []
   try:
     for resource in list_resources:
-      resource_url = "https://{0}:{1}/api/types/{2}/instances?fields=name".format(api_ip, api_port, resource)
+      resource_url = f"https://{api_ip}:{api_port}/api/types/{resource}/instances?fields=name"
       resource_info = api_session.get(resource_url, verify=False)
       resource_info = json.loads(resource_info.content.decode('utf8'))
 
@@ -174,7 +174,7 @@ def discovering_resources(api_user: str, api_password: str, api_ip: str, api_por
           discovered_resource.append(one_object_list)
       converted_resource = convert_to_zabbix_json(discovered_resource)
       timestampnow = int(time.time())
-      xer.append("%s %s %s %s" % (storage_name, resource, timestampnow, converted_resource))
+      xer.append(f"{storage_name} {resource} {timestampnow} {converted_resource}")
   except Exception as oops:
     unity_logger.error("Error occurs in discovering")
     sys.exit("1000")
@@ -209,11 +209,11 @@ def get_status_resources(api_user: str, api_password: str, api_ip: str, api_port
     for resource in list_resources:
       # Create different URI for different resources
       if ['pool'].count(resource) == 1:
-        resource_url = "https://{0}:{1}/api/types/{2}/instances?fields=name,health,sizeTotal,sizeUsed,sizeSubscribed".format(api_ip, api_port, resource)
+        resource_url = f"https://{api_ip}:{api_port}/api/types/{resource}/instances?fields=name,health,sizeTotal,sizeUsed,sizeSubscribed"
       elif ['lun'].count(resource) == 1:
-        resource_url = "https://{0}:{1}/api/types/{2}/instances?fields=name,health,sizeTotal,sizeAllocated".format(api_ip, api_port, resource)
+        resource_url = f"https://{api_ip}:{api_port}/api/types/{resource}/instances?fields=name,health,sizeTotal,sizeAllocated"
       else:
-        resource_url = "https://{0}:{1}/api/types/{2}/instances?fields=name,health,needsReplacement".format(api_ip, api_port, resource)
+        resource_url = f"https://{api_ip}:{api_port}/api/types/{resource}/instances?fields=name,health,needsReplacement"
 
       # Get info about one resource
       resource_info = api_session.get(resource_url, verify=False)
@@ -222,9 +222,9 @@ def get_status_resources(api_user: str, api_password: str, api_ip: str, api_port
 
       if ['ethernetPort', 'fcPort', 'sasPort'].count(resource) == 1:
         for one_object in resource_info['entries']:
-          key_health = "health.{0}.[{1}]".format(resource, one_object['content']['id'].replace(' ', '_'))
-          key_status = "link.{0}.[{1}]".format(resource, one_object['content']['id'].replace(' ', '_'))
-          state_resources.append("%s %s %s %s" % (storage_name, key_health, timestampnow, one_object['content']['health']['value']))
+          key_health = f"health.{resource}.[{one_object['content']['id'].replace(' ', '_')}]"
+          key_status = f"link.{resource}.[{one_object['content']['id'].replace(' ', '_')}]"
+          state_resources.append(f"{storage_name} {key_health} {timestampnow} {one_object['content']['health']['value']}")
 
           # Get state of interfaces from description
           descriptionIds = str(one_object['content']['health']['descriptionIds'][0]) # Convert description to string
@@ -233,28 +233,28 @@ def get_status_resources(api_user: str, api_password: str, api_ip: str, api_port
           elif descriptionIds.find("LINK_DOWN") >=0:
             link_status = 11
 
-          state_resources.append("%s %s %s %s" % (storage_name, key_status, timestampnow, link_status))
+          state_resources.append(f"{storage_name} {key_status} {timestampnow} {link_status}")
 
       elif ['lun'].count(resource) == 1:
         for one_object in resource_info['entries']:
-          key_health = "health.{0}.[{1}]".format(resource, one_object['content']['name'].replace(' ', '_')) # Use lun name instead lun id on zabbix key
-          key_sizeTotal = "sizeTotal.{0}.[{1}]".format(resource, one_object['content']['name'].replace(' ', '_'))
-          key_sizeAllocated = "sizeAllocated.{0}.[{1}]".format(resource, one_object['content']['name'].replace(' ', '_'))
+          key_health = f"health.{resource}.[{one_object['content']['name'].replace(' ', '_')}]" # Use lun name instead lun id on zabbix key
+          key_sizeTotal = f"sizeTotal.{resource}.[{one_object['content']['name'].replace(' ', '_')}]"
+          key_sizeAllocated = f"sizeAllocated.{resource}.[{one_object['content']['name'].replace(' ', '_')}]"
 
-          state_resources.append("%s %s %s %s" % (storage_name, key_health, timestampnow, one_object['content']['health']['value']))
-          state_resources.append("%s %s %s %s" % (storage_name, key_sizeTotal, timestampnow, one_object['content']['sizeTotal']))
-          state_resources.append("%s %s %s %s" % (storage_name, key_sizeAllocated, timestampnow, one_object['content']['sizeAllocated']))
+          state_resources.append(f"{storage_name} {key_health} {timestampnow} {one_object['content']['health']['value']}")
+          state_resources.append(f"{storage_name} {key_sizeTotal} {timestampnow} {one_object['content']['sizeTotal']}")
+          state_resources.append(f"{storage_name} {key_sizeAllocated} {timestampnow} {one_object['content']['sizeAllocated']}")
       elif ['pool'].count(resource) == 1:
         for one_object in resource_info['entries']:
-          key_health = "health.{0}.[{1}]".format(resource, one_object['content']['name'].replace(' ', '_')) # Use pull name instead lun id on zabbix key
-          key_sizeUsedBytes = "sizeUsedBytes.{0}.[{1}]".format(resource, one_object['content']['name'].replace(' ', '_'))
-          key_sizeTotalBytes = "sizeTotalBytes.{0}.[{1}]".format(resource, one_object['content']['name'].replace(' ', '_'))
-          key_sizeSubscribedBytes = "sizeSubscribedBytes.{0}.[{1}]".format(resource, one_object['content']['name'].replace(' ', '_'))
+          key_health = f"health.{resource}.[{one_object['content']['name'].replace(' ', '_')}]" # Use pull name instead lun id on zabbix key
+          key_sizeUsedBytes = f"sizeUsedBytes.{resource}.[{one_object['content']['name'].replace(' ', '_')}]"
+          key_sizeTotalBytes = f"sizeTotalBytes.{resource}.[{one_object['content']['name'].replace(' ', '_')}]"
+          key_sizeSubscribedBytes = f"sizeSubscribedBytes.{resource}.[{one_object['content']['name'].replace(' ', '_')}]"
 
-          state_resources.append("%s %s %s %s" % (storage_name, key_health, timestampnow, one_object['content']['health']['value']))
-          state_resources.append("%s %s %s %s" % (storage_name, key_sizeUsedBytes, timestampnow, one_object['content']['sizeUsed']))
-          state_resources.append("%s %s %s %s" % (storage_name, key_sizeTotalBytes, timestampnow, one_object['content']['sizeTotal']))
-          state_resources.append("%s %s %s %s" % (storage_name, key_sizeSubscribedBytes, timestampnow, one_object['content']['sizeSubscribed']))
+          state_resources.append(f"{storage_name} {key_health} {timestampnow} {one_object['content']['health']['value']}")
+          state_resources.append(f"{storage_name} {key_sizeUsedBytes} {timestampnow} {one_object['content']['sizeUsed']}")
+          state_resources.append(f"{storage_name} {key_sizeTotalBytes} {timestampnow} {one_object['content']['sizeTotal']}")
+          state_resources.append(f"{storage_name} {key_sizeSubscribedBytes} {timestampnow} {one_object['content']['sizeSubscribed']}")
       else:
         for one_object in resource_info['entries']:
           # Get state of resources from description
@@ -266,10 +266,10 @@ def get_status_resources(api_user: str, api_password: str, api_ip: str, api_port
           else:
             running_status = 5
 
-          key_health = "health.{0}.[{1}]".format(resource, one_object['content']['id'].replace(' ', '_'))
-          key_status = "running.{0}.[{1}]".format(resource, one_object['content']['id'].replace(' ', '_'))
-          state_resources.append("%s %s %s %s" % (storage_name, key_health, timestampnow, one_object['content']['health']['value']))
-          state_resources.append("%s %s %s %s" % (storage_name, key_status, timestampnow, running_status))
+          key_health = f"health.{resource}.[{one_object['content']['id'].replace(' ', '_')}]"
+          key_status = f"running.{resource}.[{one_object['content']['id'].replace(' ', '_')}]"
+          state_resources.append(f"{storage_name} {key_health} {timestampnow} {one_object['content']['health']['value']}")
+          state_resources.append(f"{storage_name} {key_status} {timestampnow} {running_status}")
   except Exception as oops:
     unity_logger.error("Error occured in get state")
     sys.exit("1000")
