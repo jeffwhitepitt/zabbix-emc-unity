@@ -120,7 +120,7 @@ def send_data_to_zabbix(zabbix_data: list, storage_name: str) -> int:
     Return code from zabbix_sender
   """
   sender_command = "/usr/bin/zabbix_sender"
-  config_path = "/etc/zabbix/zabbix_agentd.conf"
+  config_path = "/etc/zabbix/zabbix_agent2.conf"
   time_of_create_file = int(time.time())
   temp_file = f"/tmp/{storage_name}_{time_of_create_file}.tmp"
 
