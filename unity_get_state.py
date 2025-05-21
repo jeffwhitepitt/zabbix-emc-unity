@@ -49,17 +49,17 @@ def api_connect(api_user: str, api_password: str, api_ip: str, api_port: str) ->
     login = session_unity.get(api_login_url, verify=False)
   except Exception as oops:
     unity_logger.error(f"Connection Error Occurs: {oops}")
-    sys.exit("50")
+    sys.exit(1)
 
   if login.status_code != 200:
     unity_logger.error(f"Connection Return Code = {login.status_code}")
-    sys.exit("60")
+    sys.exit(1)
   elif login.text.find("isPasswordChangeRequired") >= 0: # If i can find string "isPasswordChangeRequired" therefore login is successful
     unity_logger.info("Connection established")
     return session_unity
   else:
     unity_logger.error("Login Something went wrong")
-    sys.exit("70")
+    sys.exit(1)
 
 
 
@@ -81,16 +81,16 @@ def api_logout(api_ip: str, session_unity: requests.Session) -> None:
     logout = session_unity.post(api_logout_url, verify=False)
   except Exception as oops:
     unity_logger.error(f"Logout Error Occurs: {oops}")
-    sys.exit("150")
+    sys.exit(1)
 
   if logout.status_code != 200:
     unity_logger.error(f"Logout status = {logout.status_code}")
-    sys.exit("160")
+    sys.exit(1)
   elif logout.text.find("Logout successful") >= 0:
     unity_logger.info("Logout successful")
   else:
     unity_logger.error("Logout Something went wrong")
-    sys.exit("170")
+    sys.exit(1)
 
 
 def convert_to_zabbix_json(data: list) -> str:
@@ -124,7 +124,7 @@ def send_data_to_zabbix(zabbix_data: list, storage_name: str) -> int:
   time_of_create_file = int(time.time())
   temp_file = f"/tmp/{storage_name}_{time_of_create_file}.tmp"
 
-  with open(temp_file, "w") as f:
+  with open(temp_file, "w", encoding="utf-8") as f:
     f.write("")
     f.write("\n".join(zabbix_data))
 
@@ -177,7 +177,7 @@ def discovering_resources(api_user: str, api_password: str, api_ip: str, api_por
       xer.append(f"{storage_name} {resource} {timestampnow} {converted_resource}")
   except Exception as oops:
     unity_logger.error("Error occurs in discovering")
-    sys.exit("1000")
+    sys.exit(1)
 
   api_session_logout = api_logout(api_ip, api_session)
   return send_data_to_zabbix(xer, storage_name)
@@ -272,7 +272,7 @@ def get_status_resources(api_user: str, api_password: str, api_ip: str, api_port
           state_resources.append(f"{storage_name} {key_status} {timestampnow} {running_status}")
   except Exception as oops:
     unity_logger.error("Error occured in get state")
-    sys.exit("1000")
+    sys.exit(1)
 
   api_session_logout = api_logout(api_ip, api_session)
   return send_data_to_zabbix(state_resources, storage_name)
