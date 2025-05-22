@@ -18,8 +18,6 @@ import logging
 import requests
 import urllib3
 
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 def api_connect(api_user: str, api_password: str, api_ip: str, api_port: str) -> requests.Session:
@@ -314,6 +312,8 @@ def main() -> None:
   group.add_argument('--discovery', action ='store_true')
   group.add_argument('--status', action='store_true')
   arguments = unity_parser.parse_args()
+
+  requests.packages.urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
   unity_logger.debug(f"Operating on storage: {arguments.storage_name} at {arguments.api_ip}:{arguments.api_port}")
 
