@@ -14,11 +14,9 @@ import sys
 import json
 import subprocess
 import logging
-import logging.handlers
+
 import requests
 import urllib3
-#urllib3.disable_warnings()
-#urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
