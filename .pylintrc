@@ -1,0 +1,13 @@
+# Python code linting configuration 
+# Controls Pylint's behavior, warnings and code style checks
+
+[MASTER]
+disable=
+  import-error,
+  bad-indentation,
+  line-too-long,
+  logging-fstring-interpolation
+
+# Disable complaints about how files are named.
+[MESSAGES CONTROL]
+module-naming-style=any
