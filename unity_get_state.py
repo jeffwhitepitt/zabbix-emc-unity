@@ -184,7 +184,7 @@ def discovering_resources(api_user: str, api_password: str, api_ip: str, api_por
     sys.exit(1)
 
   unity_logger.debug("Resource discovery complete, logging out")
-  api_session_logout = api_logout(api_ip, api_session)
+  api_logout(api_ip, api_session)
   return send_data_to_zabbix(xer, storage_name)
 
 
@@ -282,7 +282,7 @@ def get_status_resources(api_user: str, api_password: str, api_ip: str, api_port
     sys.exit(1)
 
   unity_logger.debug(f"Resource status collection complete, collected {len(state_resources)} metrics")
-  api_session_logout = api_logout(api_ip, api_session)
+  api_logout(api_ip, api_session)
   return send_data_to_zabbix(state_resources, storage_name)
 
 
